@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row mt-5">
+    <div class="col-md-12 text-center">
+        <!-- Jinja extracts name from session and display -->
+        <h2 class="text-success">Welcome to Trek Mate, {{ session.get('role') }}!</h2>
+        <p class="lead text-muted">Yeh aapka Trekker Dashboard hai. Yahan aap available treks dekh payenge.</p>
+    </div>
+</div>
+{% endblock %}

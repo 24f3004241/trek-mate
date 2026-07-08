@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row mb-3 align-items-center">
+    <div class="col-md-4">
+        <h3 class="text-success fw-bold">Manage Staff</h3>
+    </div>
+
+    <div class="col-md-5">
+        <form action="{{ url_for('manage_staff') }}" method="GET" class="d-flex">
+            <input type="text" name="search" class="form-control border-success me-2" placeholder="Search by Name or Email..." value="{{ search_query }}">
+            <button type="submit" class="btn btn-success fw-bold">Search</button>
+
+            {% if search_query %}
+                <a href="{{ url_for('manage_staff') }}" class="btn btn-outline-secondary ms-2">Clear</a>
+            {% endif %}
+        </form>
+    </div>
+
+    <div class="col-md-3 text-end">
+        <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-dark btn-sm fw-bold">Back to Dashboard</a>
+    </div>
+</div>
+
+<div class="card shadow border-success mb-4">
+    <div class="card-body p-0 table-responsive">
+        {% if staff_list %}
+            <table class="table table-bordered table-hover align-middle text-center mb-0">
+                <thead class="table-success">
+                    <tr>
+                        <th>ID</th>
+                        <th>Username</th>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Experience</th>
+                        <th>Status</th>
+                        <th>Profile</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for staff in staff_list %}
+                    <tr>
+                        <td class="fw-bold">{{ staff.id }}</td>
+                        <td class="text-success fw-bold">{{ staff.user.username }}</td>
+                        <td>{% if staff.user.full_name %}{{ staff.user.full_name }}{% else %}N/A{% endif %}</td>
+                        <td>{{ staff.user.email }}</td>
+                        <td>{% if staff.user.experience %}{{ staff.user.experience }} Yrs{% else %}Not Available{% endif %}</td>
+
+                        <!-- Status Column -->
+                        <td class="fw-bold">
+                            {% if staff.status == 'Approved' %}
+                                <span class="badge bg-success">Approved</span>
+                            {% elif staff.status == 'Blacklisted' %}
+                                <span class="badge bg-danger">Blacklisted</span>
+                            {% else %}
+                                <span class="badge bg-warning text-dark">Pending</span>
+                            {% endif %}
+                        </td>
+                        
+                        <!-- Profile Column -->
+                        <td>
+                            <a href="{{ url_for('staff_profile', staff_id=staff.id) }}" class="btn btn-primary btn-sm fw-bold">View Profile</a>
+                        </td>
+                        
+                        <!-- Actions Column -->
+                        <td>
+                            <div class="d-flex justify-content-center gap-1">
+                                
+                                <!-- Approve Button: Sirf tab dikhega jab status Approved na ho -->
+                                {% if staff.status != 'Approved' %}
+                                    <a href="{{ url_for('approve_action', staff_id=staff.id) }}" class="btn btn-success btn-sm fw-bold">Approve</a>
+                                {% endif %}
+                                
+                                <!-- Blacklist Button: Sirf tab dikhega jab status Blacklisted na ho -->
+                                {% if staff.status != 'Blacklisted' %}
+                                    <a href="{{ url_for('blacklist_action', staff_id=staff.id) }}" class="btn btn-danger btn-sm fw-bold" onclick="return confirm('Do you really want blacklist this staff ?');">Blacklist</a>
+                                {% endif %}
+                                
+                                <!-- Remove Button: Hamesha dikhega -->
+                                <a href="{{ url_for('remove_staff_action', staff_id=staff.id) }}" class="btn btn-dark btn-sm fw-bold" onclick="return confirm('Are you sure you want to delete this account ?');">Remove</a>
+                                
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <div class="alert alert-warning text-center m-3">There is no staff member in the list.</div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

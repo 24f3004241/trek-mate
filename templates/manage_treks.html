@@ -1,0 +1,124 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row mb-3 align-items-center">
+    <div class="col-md-3">
+        <h3 class="text-success fw-bold mb-0">Manage Treks</h3>
+    </div>
+
+    <div class="col-md-6">
+        <form action="{{ url_for('manage_treks') }}" method="GET" class="d-flex">
+            <input type="text" name="search" class="form-control border-success me-2" placeholder="Search by ID, Trek Name, Location, Difficulty or staff..." value="{{ search_query }}">
+            <button type="submit" class="btn btn-success fw-bold px-4">Search</button>
+
+            {% if search_query %}
+                <a href="{{ url_for('manage_treks') }}" class="btn btn-outline-secondary ms-2 fw-bold">Clear</a>
+            {% endif %}
+        </form>
+    </div>
+
+    <div class="col-md-3 text-end">
+        <a href="{{ url_for('add_trek') }}" class="btn btn-success fw-bold">+ Add Trek</a>
+        <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-dark btn-sm">Back to Dashboard</a>
+    </div>
+</div>
+
+<div class="card shadow border-success">
+    <!-- table-responsive se neeche scrollbar aayega agar screen choti hui -->
+    <div class="card-body p-0 table-responsive">
+        
+        {% if treks %}
+            <!-- align-middle se text center me rahega, nowrap se line nahi tootegi -->
+            <table class="table table-bordered table-hover align-middle text-center mb-0" style="font-size: 0.85rem; white-space: nowrap;">
+                <thead class="table-success">
+                    <tr>
+                        <th>ID</th>
+                        <th>Trek Name</th>
+                        <th>Location</th>
+                        <th>Difficulty</th>
+                        <th>Start Date</th>
+                        <th>End Date</th>
+                        <th>Duration</th>
+                        <th>Slots</th>
+                        <th>Participants</th>
+                        <th>Staff</th>
+                        <th>Booking Status</th>
+                        <th>Trek State</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for trek in treks %}
+                    <tr>
+                        <td class="fw-bold">{{ trek.id }}</td>
+                        <td class="fw-bold text-success">{{ trek.name }}</td>
+                        <td>{{ trek.location }}</td>
+                        <td>{{ trek.difficulty }}</td>
+                        <td>{{ trek.start_date.strftime('%d-%m-%Y') }}</td>
+                        <td>{{ trek.end_date.strftime('%d-%m-%Y') }}</td>
+                        <td>{{ trek.duration }} Days</td>
+                        <td>{{ trek.available_slots }}</td>
+                        
+                        <!-- Participants Column -->
+                        <td>
+                            <h6 class="mb-1 fw-bold">{{ trek.bookings|length }}</h6>
+                            <a href="{{ url_for('trek_participants', trek_id=trek.id) }}" class="btn btn-dark btn-sm" style="font-size: 0.75rem;">View List</a>
+                        </td>
+                        
+                        <!-- Staff Column -->
+                        <td>
+                            {% if trek.staff %}
+                                <div class="mb-1 fw-bold text-dark">{{ trek.staff.user.username }}</div>
+                                <a href="{{ url_for('staff_profile', staff_id=trek.staff.id) }}" class="btn btn-outline-success btn-sm" style="font-size: 0.75rem;">Profile</a>
+                            {% else %}
+                                <span class="text-danger">Not Assigned</span>
+                            {% endif %}
+                        </td>
+                        
+                        <!-- Booking Status Column -->
+                        <td>
+                            {% if trek.start_date <= today or trek.available_slots <= 0 or trek.status == 'Closed' %}
+                                <span class="text-danger fw-bold">Closed</span>
+                            {% else %}
+                                <span class="text-success fw-bold" style="letter-spacing: 0.5px;">Open</span>
+                            {% endif %}
+                        </td>
+                        
+                        <!-- Trek State Column (Dynamic Logic) -->
+                        <td>
+                            {% if trek.end_date < today %}
+                                <span class="badge bg-dark">Completed</span>
+                            {% elif trek.start_date > today %}
+                                <span class="badge bg-secondary">Upcoming</span>
+                            {% else %}
+                                <span class="badge bg-success">Ongoing</span>
+                            {% endif %}
+                        </td>
+                        
+                        <!-- Actions Column (Stacked Buttons) -->
+                        <td>
+                            <div class="d-flex gap-1 justify-content-center">
+                                <a href="{{ url_for('trek_details', trek_id=trek.id) }}" class="btn btn-dark btn-sm">View</a>
+
+                                {% if trek.end_date >= today %}
+                                    <a href="{{ url_for('edit_trek', trek_id=trek.id) }}" class="btn btn-warning btn-sm fw-bold">Edit</a>
+                                {% else %}
+                                    <button class="btn btn-secondary btn-sm" disabled>Edit</button>
+                                {% endif %}
+
+                                <a href="{{ url_for('delete_trek', trek_id=trek.id) }}" 
+                                       class="btn btn-danger btn-sm fw-bold"
+                                       onclick="return confirm('Are you sure you want to delete this trek?');">Delete</a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <div class="alert alert-warning text-center m-3">There is no trek available.</div>
+        {% endif %}
+        
+    </div>
+</div>
+{% endblock %}

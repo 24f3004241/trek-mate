@@ -1,0 +1,104 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="row mb-4 align-items-center">
+    <div class="col-md-8">
+        <h3 class="text-success fw-bold">Trekker Profile</h3>
+        <p class="text-muted mb-0">Detailed information and trekking history of the user.</p>
+    </div>
+    <div class="col-md-4 text-end">
+        <a href="{{ url_for('manage_users') }}" class="btn btn-outline-dark btn-sm fw-bold">← Back to All Users</a>
+    </div>
+</div>
+
+<div class="card shadow border-success mb-5" style="border-radius: 10px; overflow: hidden;">
+    <div class="card-header bg-success text-white py-3 d-flex align-items-center">
+        <h4 class="mb-0 fw-bold">{{ user.username }}'s Profile</h4>
+    </div>
+    
+    <div class="card-body p-4">
+        <div class="row fs-5">
+            <div class="col-md-6 mb-3 mb-md-0">
+                <p class="mb-3"><strong>User ID:</strong> <span class="fw-bold text-dark">#{{ user.id }}</span></p>
+                <p class="mb-3"><strong>Full Name:</strong> <span class="text-muted">{{ user.full_name | default('N/A') }}</span></p>
+                <p class="mb-3"><strong>Phone Number:</strong> <span class="text-muted">{{ user.phone_number | default('N/A') }}</span></p>
+                <p class="mb-3"><strong>Date of Birth:</strong> <span class="text-muted">{{ user.dob | default('N/A') }}</span></p>
+                <p class="mb-3"><strong>City:</strong> <span class="text-muted">{{ user.city | default('N/A') }}</span></p>
+            </div>
+            
+            <div class="col-md-6">
+                <p class="mb-3"><strong>Email Address:</strong> <span class="text-muted">{{ user.email }}</span></p>
+                <p class="mb-3"><strong>Gender:</strong> <span class="text-muted">{{ user.gender | default('N/A') }}</span></p>
+                <p class="mb-3"><strong>State:</strong> <span class="text-muted">{{ user.state | default('N/A') }}</span></p>
+                <p class="mb-3"><strong>System Role:</strong> <span class="badge bg-secondary text-uppercase">{{ user.role }}</span></p>
+                <p class="mb-3"><strong>Account Status:</strong> 
+                    {% if user.status == 'Blocked' %}
+                        <span class="badge bg-danger">Blocked</span>
+                    {% else %}
+                        <span class="badge bg-success">Active</span>
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card-footer bg-light text-center py-3">
+        <div class="d-flex justify-content-center gap-3">
+            {% if user.status == 'Blocked' %}
+                <a href="{{ url_for('unblock_user', user_id=user.id) }}" class="btn btn-success fw-bold px-4">Unblock User</a>
+            {% else %}
+                <a href="{{ url_for('block_user', user_id=user.id) }}" class="btn btn-warning fw-bold px-4">Block User</a>
+            {% endif %}
+            
+            <a href="{{ url_for('remove_user', user_id=user.id) }}" class="btn btn-danger fw-bold px-4" onclick="return confirm('Are you sure you want to permanently delete this user account?');">Remove Account</a>
+        </div>
+    </div>
+</div>
+
+<div class="mt-5 mb-5">
+    <h4 class="text-dark fw-bold border-bottom border-success pb-2 mb-4">
+        Trekking History & Bookings
+    </h4>
+    
+    <div class="card shadow border-dark">
+        <div class="card-body p-0 table-responsive">
+            {% if user.bookings %}
+                <table class="table table-hover mb-0 text-center align-middle">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Booking ID</th>
+                            <th>Trek Name</th>
+                            <th>Booking Date</th>
+                            <th>Seats Booked</th>
+                            <th>Total Price</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for booking in user.bookings %}
+                        <tr>
+                            <td class="fw-bold">#{{ booking.id }}</td>
+                            <td class="text-success fw-bold">{{ booking.trek.name }}</td>
+                            <td>{{ booking.booking_date.strftime('%d-%b-%Y') }}</td>
+                            <td>{{ booking.seats_booked }}</td>
+                            <td>₹{{ booking.total_price }}</td>
+                            <td>
+                                {% if booking.booking_status == 'Cancelled' %}
+                                    <span class="badge bg-danger">{{ booking.booking_status }}</span>
+                                {% else %}
+                                    <span class="badge bg-success">{{ booking.booking_status }}</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <div class="alert alert-light text-center m-3 p-4 border text-muted">
+                    <h5 class="fw-bold mb-1">No Bookings Found</h5>
+                    <p class="mb-0">This user has not booked any treks yet.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

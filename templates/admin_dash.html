@@ -1,0 +1,122 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <h2 class="text-success fw-bold">Admin Dashboard</h2>
+        <p class="text-muted">Welcome back, Admin!</p>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Box 1: Trekkers -->
+    <div class="col-md-3">
+        <div class="card text-white bg-success mb-3 shadow">
+            <div class="card-header">Total Trekkers</div>
+            <div class="card-body">
+                <h3 class="card-title">{{ t_users }}</h3>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Box 2: Staff -->
+    <div class="col-md-3">
+        <div class="card text-white bg-dark mb-3 shadow">
+            <div class="card-header">Trek Staff</div>
+            <div class="card-body">
+                <h3 class="card-title">{{ t_staff }}</h3>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Box 3: Treks -->
+    <div class="col-md-3">
+        <div class="card text-white bg-secondary mb-3 shadow">
+            <div class="card-header">Total Treks</div>
+            <div class="card-body">
+                <h3 class="card-title">{{ t_treks }}</h3>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Box 4: Bookings -->
+    <div class="col-md-3">
+        <div class="card text-dark bg-warning mb-3 shadow">
+            <div class="card-header fw-bold">Total Bookings</div>
+            <div class="card-body">
+                <h3 class="card-title fw-bold">{{ t_bookings }}</h3>
+            </div>
+        </div>
+    </div>
+</div>
+
+<hr class="mt-4 mb-4">
+
+<!-- Admin Actions Buttons -->
+<div class="row mt-4 mb-5">
+    <div class="col-md-12">
+        <h4>Quick Actions</h4>
+        <a href="{{ url_for('add_trek') }}" class="btn btn-success m-1">+ Add New Trek</a>
+        <a href="{{ url_for('manage_staff') }}" class="btn btn-dark m-1">Manage Staff</a>
+        <a href="{{ url_for('manage_users') }}" class="btn btn-secondary m-1">View All Users</a>
+        <a href="{{ url_for('manage_treks') }}" class="btn btn-warning m-1">Manage Treks</a>
+    </div>
+</div>
+
+<hr class="mt-4 mb-4">
+
+<!-- Trek Table -->
+<div class="row">
+    <div class="col-md-12">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h4 class="text-success fw-bold">Available Treks</h4>
+            <a href="{{ url_for('manage_treks') }}" class="btn btn-outline-dark btn-sm fw-bold">View Full Details & Manage</a>
+        </div>
+        
+        <div class="card shadow-sm">
+            <div class="card-body p-0">
+                {% if treks %}
+                    <table class="table table-hover mb-0">
+                        <thead class="table-success">
+                            <tr>
+                                <th>ID</th>
+                                <th>Trek Name</th>
+                                <th>Location</th>
+                                <th>Duration</th>
+                                <th>Start Date</th>
+                                <th>Available Slots</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            
+                            {% for trek in treks %} 
+                            <tr>
+                                <td class="fw-bold">{{ trek.id }}</td>
+                                <td class="fw-bold text-success">{{ trek.name }}</td>
+                                <td>{{ trek.location }}</td>
+                                <td>{{ trek.duration }} Days</td>
+                                <td>{{ trek.start_date.strftime('%d-%b-%Y') }}</td>
+                                <td>{{ trek.available_slots }}</td>
+                                <td>
+                                    {% if trek.start_date > today %}
+                                        <span class="badge bg-secondary">Upcoming</span>
+                                    {% elif trek.end_date < today %}
+                                        <span class="badge bg-dark">Completed</span>
+                                    {% else %}
+                                        <span class="badge bg-success">Ongoing</span>
+                                    {% endif %}                                    
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <div class="alert alert-warning text-center m-0 border-0">There is no trek Available right now.</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

@@ -45,7 +45,7 @@
                     </div>
                     
                     <div class="card-body">
-                        <form action="/login" method="POST">
+                        <form action="{{ url_for('login') }}" method="POST">
                             
                             <div class="mb-3">
                                 <label class="form-label">Username</label>
@@ -61,7 +61,7 @@
                         </form>
 
                         <div class="text-center mt-3">
-                            <p>New User? <a href="/register" class="text-decoration-none text-success fw-bold">Register here</a></p>
+                            <p>New User? <a href="{{ url_for('register') }}" class="text-decoration-none text-success fw-bold">Register here</a></p>
                         </div>
                         
                     </div>

@@ -90,9 +90,38 @@ with app.app_context():
         db.session.commit()
         print("Default admin user created!")
 
+# Landing page
 @app.route('/')
+@app.route('/home')
 def home():
-    return redirect(url_for('login'))
+    return render_template("home.html")
+
+
+# Explore/Booking Page Route
+@app.route('/explore')
+def explore():
+    # Get search and filter parameters from URL
+    search_query = request.args.get('search', '').strip()
+    difficulty_filter = request.args.get('difficulty', '')
+    
+    # Only show treks that haven't started yet
+    query = Trek.query.filter(Trek.start_date >= date.today())
+    
+    # Search Filter (by Name or Location)
+    if search_query:
+        query = query.filter(
+            (Trek.name.ilike(f"%{search_query}%")) |
+            (Trek.location.ilike(f"%{search_query}%")) |
+            (Trek.state.ilike(f"%{search_query}%"))
+        )
+        
+    # Apply Difficulty Filter
+    if difficulty_filter:
+        query = query.filter(Trek.difficulty == difficulty_filter)
+        
+    upcoming_treks = query.order_by(Trek.start_date.asc()).all()
+    
+    return render_template("explore.html", treks=upcoming_treks, search_query=search_query, difficulty_filter=difficulty_filter)
 
 @app.route("/register", methods=['GET', 'POST'])
 def register():
@@ -170,13 +199,47 @@ def login():
 
 # Trekker Dashboard route
 @app.route("/trekker_dashboard")
-def trekker_dashboard():
-    # Security check: 
+def trekker_dashboard(): 
     if  session.get('user_id') == None or session.get('role') != 'trekker':
-        flash("Please log in to access the trekker dashboard.", "error")
+        flash("Please log in to access the trekker dashboard.", "warning")
         return redirect(url_for('login'))
     
-    return render_template("trekker_dash.html")
+    # Fetch current user from database
+    user = User.query.get(session['user_id'])
+   
+    return render_template("trekker_dash.html", user=user)
+
+# Edit Profile Route
+@app.route("/edit_profile", methods=['GET', 'POST'])
+def edit_profile():
+    if session.get('user_id') == None or session.get('role') != 'trekker':
+        flash("Please log in first.", "danger")
+        return redirect(url_for('login'))
+        
+    user = User.query.get(session['user_id'])
+    
+    if request.method == 'POST':
+        user.full_name = request.form.get('full_name')
+        user.phone_number = request.form.get('phone_number')
+        user.gender = request.form.get('gender')
+        
+        dob_str = request.form.get('date_of_birth')
+        if dob_str:
+            user.date_of_birth = datetime.strptime(dob_str, '%Y-%m-%d').date()
+            
+        user.city = request.form.get('city')
+        user.state = request.form.get('state')
+        user.bio = request.form.get('bio')
+        
+        db.session.commit()
+        flash("Profile updated successfully!", "success")
+        
+        # Return to dashboard
+        if user.role == 'staff':
+            return redirect(url_for('staff_dashboard'))
+        return redirect(url_for('trekker_dashboard'))
+        
+    return render_template("edit_profile.html", user=user)
 
 # Logout route to clear session and redirect to login
 @app.route("/logout")
@@ -608,6 +671,136 @@ def view_user_profile(user_id):
     else:
         flash("User not found !", "danger")
         return redirect(url_for('manage_users'))
+    
+
+@app.route("/trek/<int:id>")
+def view_trek(id):
+    trek = Trek.query.get_or_404(id)
+    return render_template("view_trek.html", trek=trek)
+
+@app.route("/book_trek/<int:trek_id>", methods=['GET', 'POST'])
+def book_trek(trek_id):
+    if 'user_id' not in session:
+        flash("Please log in to book a trek.", "warning")
+        return redirect(url_for('login'))
+        
+    trek = Trek.query.get_or_404(trek_id)
+    
+    if request.method == 'POST':
+        seats_to_book = int(request.form.get('seats_booked'))
+        
+        if seats_to_book <= 0:
+            flash("Please select at least 1 seat.", "danger")
+            return redirect(url_for('book_trek', trek_id=trek.id))
+            
+        if seats_to_book > trek.available_slots:
+            flash(f"Sorry, only {trek.available_slots} seats are available.", "danger")
+            return redirect(url_for('book_trek', trek_id=trek.id))
+
+        existing_booking = Booking.query.filter_by(user_id=session['user_id'], trek_id=trek.id, booking_status='Confirmed').first()
+        if existing_booking != None:
+            flash("You have already booked this trek! Check your dashboard.", "warning")
+            return redirect(url_for('view_trek', id=trek.id))
+            
+        total_price = trek.price * seats_to_book
+        
+        new_booking = Booking(
+            user_id=session['user_id'], 
+            trek_id=trek.id,
+            seats_booked=seats_to_book,
+            total_price=total_price,
+            booking_status='Confirmed')
+        
+        trek.available_slots -= seats_to_book
+        
+        db.session.add(new_booking)
+        db.session.commit()
+        
+        flash("Booking successful! Your adventure awaits.", "success")
+        return redirect(url_for('my_treks'))
+        
+    return render_template("book_trek.html", trek=trek)
+
+
+@app.route("/cancel_booking/<int:booking_id>")
+def cancel_booking(booking_id):
+    if 'user_id' not in session:
+        flash("Please log in first.", "danger")
+        return redirect(url_for('login'))
+
+    booking = Booking.query.get_or_404(booking_id)
+
+    if booking.user_id != session['user_id'] and session.get('role') != 'admin':
+        flash("You cannot cancel someone else's booking!", "danger")
+        return redirect(url_for('my_treks'))
+
+    if booking.booking_status == 'Cancelled':
+        flash("This booking is already cancelled.", "warning")
+        return redirect(url_for('my_treks'))
+
+    # change booking status
+    booking.booking_status = 'Cancelled'
+
+    # Jo seats book hui thi, unhe wapas trek mein add kar do
+    booking.trek.available_slots += booking.seats_booked
+
+    db.session.commit()
+    flash("Booking cancelled successfully. Seats have been refunded.", "success")
+
+    # Agar admin cancel kar raha hai toh admin page par bhejo, warna user page par
+    if session.get('role') == 'admin':
+        return redirect(url_for('manage_bookings'))
+    return redirect(url_for('my_treks'))
+
+# My Treks (User's Trekking History & Active Treks)
+@app.route("/my_treks")
+def my_treks():
+    if session.get('user_id') == None or session.get('role') != 'trekker':
+        flash("Please log in first.", "danger")
+        return redirect(url_for('login'))
+        
+    user = User.query.get(session['user_id'])
+    today = date.today()
+    
+    # Lists banayenge alag-alag tables ke liye
+    upcoming_bookings = []
+    current_bookings = []
+    completed_bookings = []
+    cancelled_bookings = []
+    
+    for booking in user.bookings:
+        if booking.booking_status == 'Cancelled':
+            cancelled_bookings.append(booking)
+        elif booking.trek.end_date < today:
+            completed_bookings.append(booking)
+        elif booking.trek.start_date <= today and booking.trek.end_date >= today:
+            current_bookings.append(booking)
+        else:
+            upcoming_bookings.append(booking)
+            
+    return render_template("my_treks.html", 
+                           upcoming=upcoming_bookings, 
+                           current=current_bookings, 
+                           completed=completed_bookings, 
+                           cancelled=cancelled_bookings)
+
+
+# View Specific Booking Details
+@app.route("/booking_details/<int:booking_id>")
+def booking_details(booking_id):
+    if session.get('user_id') == None or session.get('role') != 'trekker':
+        flash("Please log in first.", "danger")
+        return redirect(url_for('login'))
+        
+    booking = Booking.query.get_or_404(booking_id)
+    
+    # Koi user kisi aur user ki details na dekh paye
+    if booking.user_id != session['user_id']:
+        flash("Access Denied! You can only view your own bookings.", "danger")
+        return redirect(url_for('my_treks'))
+        
+    return render_template("booking_details.html", booking=booking)
+
 
 if __name__ == '__main__':
     app.run(debug=True)

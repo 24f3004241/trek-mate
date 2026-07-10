@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-4 mb-5">
+    
+    <div class="row mb-4 align-items-center">
+        <div class="col-md-6">
+            <h2 class="fw-bold text-success mb-1">Explore Treks</h2>
+            <p class="text-muted">Find and book your next mountain adventure.</p>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-5 bg-light">
+        <div class="card-body p-4">
+            <form action="{{ url_for('explore') }}" method="GET" class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label fw-bold text-muted small">Search by Name or Location</label>
+                    <input type="text" name="search" class="form-control form-control-lg border-success" placeholder="e.g. Manali, Kedarkantha..." value="{{ search_query }}">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-bold text-muted small">Filter by Difficulty</label>
+                    <select name="difficulty" class="form-select form-select-lg border-success">
+                        <option value="">All Difficulties</option>
+                        <option value="Easy" {% if difficulty_filter == 'Easy' %}selected{% endif %}>Easy</option>
+                        <option value="Moderate" {% if difficulty_filter == 'Moderate' %}selected{% endif %}>Moderate</option>
+                        <option value="Hard" {% if difficulty_filter == 'Hard' %}selected{% endif %}>Hard</option>
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-success btn-lg w-100 fw-bold">Search</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+        {% if treks %}
+            {% for trek in treks %}
+            <div class="col">
+                <div class="card h-100 shadow-sm border-0">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h5 class="card-title fw-bold text-success mb-0">{{ trek.name }}</h5>
+                            {% if trek.difficulty == 'Easy' %}
+                                <span class="badge bg-success">Easy</span>
+                            {% elif trek.difficulty == 'Moderate' %}
+                                <span class="badge bg-warning text-dark">Moderate</span>
+                            {% else %}
+                                <span class="badge bg-danger">Hard</span>
+                            {% endif %}
+                        </div>
+                        
+                        <p class="text-muted mb-3"><i class="bi bi-geo-alt-fill"></i> {{ trek.location }}, {{ trek.state }}</p>
+                        
+                        <div class="d-flex justify-content-between text-sm mb-2">
+                            <span class="fw-bold">Start Date:</span>
+                            <span>{{ trek.start_date.strftime('%d %b, %Y') }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between text-sm mb-3">
+                            <span class="fw-bold">Price:</span>
+                            <span class="text-success fw-bold fs-5">₹{{ trek.price }}</span>
+                        </div>
+                        
+                        {% if trek.available_slots > 0 %}
+                            <p class="text-success small fw-bold mb-0">✓ {{ trek.available_slots }} Total Seats</p>
+                        {% else %}
+                            <p class="text-danger small fw-bold mb-0">✗ Sold Out</p>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="card-footer bg-white border-0 pb-3 text-center">
+                        <a href="{{ url_for('view_trek', id=trek.id) }}" class="btn btn-outline-success w-100 fw-bold">View Details & Book</a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="col-12">
+                <div class="alert alert-light text-center p-5 border text-muted">
+                    <h4 class="fw-bold">No Treks Found</h4>
+                    <p>Try adjusting your search or filters to find what you're looking for.</p>
+                    <a href="{{ url_for('explore') }}" class="btn btn-outline-secondary mt-2">Clear Filters</a>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

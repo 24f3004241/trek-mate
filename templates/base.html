@@ -58,11 +58,30 @@
                         </li>
                     {% endif %}
 
+                    {% if session.get('user_id') and session.get('role') != 'admin' %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('home') }}">Home</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link fw-bold text-success" href="{{ url_for('trekker_dashboard') }}">Dashboard</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link fw-bold text-success" href="{{ url_for('explore') }}">Explore Treks</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link fw-bold text-success" href="{{ url_for('my_treks') }}">My Treks</a>
+                        </li>
+                    {% endif %}
+
+
                     
                     <li class="nav-item ms-lg-3 mt-1">
                         <a href="{{ url_for('logout') }}" class="btn btn-outline-danger btn-sm mt-1">Logout</a>
                     </li>
                 {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('home') }}">Home</a>
+                    </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('login') }}">Login</a>
                     </li>

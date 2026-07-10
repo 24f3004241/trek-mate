@@ -1,0 +1,182 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-4 mb-5">
+    
+    <div class="row mb-4 align-items-center">
+        <div class="col-md-8">
+            <h2 class="fw-bold text-success mb-1">My Treks</h2>
+            <p class="text-muted">Manage your upcoming journeys and view past trekking history.</p>
+        </div>
+        <div class="col-md-4 text-md-end">
+            <a href="{{ url_for('trekker_dashboard') }}" class="btn btn-outline-dark fw-bold">← Back to Dashboard</a>
+        </div>
+    </div>
+
+    <div class="d-flex flex-wrap gap-2 mb-5 pb-3 border-bottom border-success">
+        <a href="#upcoming" class="btn btn-success fw-bold px-4">Upcoming Treks</a>
+        <a href="#ongoing" class="btn btn-primary fw-bold px-4">Ongoing Treks</a>
+        <a href="#completed" class="btn btn-secondary fw-bold px-4">Completed History</a>
+        <a href="#cancelled" class="btn btn-danger fw-bold px-4">Cancelled</a>
+    </div>
+
+    <h4 id="upcoming" class="text-success fw-bold mb-3"><i class="bi bi-calendar-event"></i> Upcoming Treks</h4>
+    <div class="card shadow-sm border-success mb-5">
+        <div class="card-body p-0 table-responsive custom-table-scroll">
+            {% if upcoming %}
+                <table class="table table-hover mb-0 text-center align-middle">
+                    <thead class="table-success">
+                        <tr>
+                            <th>Trek Name</th>
+                            <th>Start Date</th>
+                            <th>Seats Booked</th>
+                            <th>Paid Amount</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for booking in upcoming %}
+                        <tr>
+                            <td class="fw-bold">
+                                <a href="{{ url_for('booking_details', booking_id=booking.id) }}" class="text-success text-decoration-none">
+                                    {{ booking.trek.name }} <i class="bi bi-box-arrow-up-right small"></i>
+                                </a>
+                            </td>
+                            <td>{{ booking.trek.start_date.strftime('%d %b, %Y') }}</td>
+                            <td>{{ booking.seats_booked }}</td>
+                            <td>₹{{ booking.total_price }}</td>
+                            <td>
+                                <a href="{{ url_for('cancel_booking', booking_id=booking.id) }}" 
+                                   class="btn btn-outline-danger btn-sm fw-bold" 
+                                   onclick="return confirm('Cancel this booking? This action cannot be undone.');">
+                                   Cancel Booking
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <div class="p-4 text-center text-muted">No upcoming treks found. Time to plan an adventure!</div>
+            {% endif %}
+        </div>
+    </div>
+
+    <h4 id="ongoing" class="text-primary fw-bold mb-3"><i class="bi bi-play-circle"></i> Ongoing Treks</h4>
+    <div class="card shadow-sm border-primary mb-5">
+        <div class="card-body p-0 table-responsive">
+            {% if current %}
+                <table class="table table-hover mb-0 text-center align-middle">
+                    <thead class="table-primary">
+                        <tr>
+                            <th>Trek Name</th>
+                            <th>Location</th>
+                            <th>End Date</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for booking in current %}
+                        <tr>
+                            <td class="fw-bold">
+                                <a href="{{ url_for('booking_details', booking_id=booking.id) }}" class="text-success text-decoration-none">
+                                    {{ booking.trek.name }} <i class="bi bi-box-arrow-up-right small"></i>
+                                </a>
+                            </td>
+                            <td>{{ booking.trek.location }}</td>
+                            <td>{{ booking.trek.end_date.strftime('%d %b, %Y') }}</td>
+                            <td><span class="badge bg-primary">Currently Trekking</span></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <div class="p-4 text-center text-muted">You are not currently on any trek.</div>
+            {% endif %}
+        </div>
+    </div>
+
+    <h4 id="completed" class="text-secondary fw-bold mb-3"><i class="bi bi-check-circle"></i> Completed History</h4>
+    <div class="card shadow-sm border-secondary mb-5">
+        <div class="card-body p-0 table-responsive">
+            {% if completed %}
+                <table class="table table-hover mb-0 text-center align-middle">
+                    <thead class="table-secondary">
+                        <tr>
+                            <th>Trek Name</th>
+                            <th>Completed On</th>
+                            <th>Duration</th>
+                            <th>Difficulty</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for booking in completed %}
+                        <tr>
+                            <td class="fw-bold">
+                                <a href="{{ url_for('booking_details', booking_id=booking.id) }}" class="text-success text-decoration-none">
+                                    {{ booking.trek.name }} <i class="bi bi-box-arrow-up-right small"></i>
+                                </a>
+                            </td>
+                            <td>{{ booking.trek.end_date.strftime('%d %b, %Y') }}</td>
+                            <td>{{ booking.trek.duration }} Days</td>
+                            <td>{{ booking.trek.difficulty }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <div class="p-4 text-center text-muted">You haven't completed any treks yet.</div>
+            {% endif %}
+        </div>
+    </div>
+
+    <h4 id="cancelled" class="text-danger fw-bold mb-3"><i class="bi bi-x-circle"></i> Cancelled Bookings</h4>
+    <div class="card shadow-sm border-danger mb-5">
+        <div class="card-body p-0 table-responsive">
+            {% if cancelled %}
+                <table class="table table-hover mb-0 text-center align-middle">
+                    <thead class="table-danger">
+                        <tr>
+                            <th>Booking ID</th>
+                            <th>Trek Name</th>
+                            <th>Refunded Amount</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for booking in cancelled %}
+                        <tr class="opacity-75">
+                            <td>#BKG-{{ booking.id }}</td>
+                            <td class="fw-bold">
+                                <a href="{{ url_for('booking_details', booking_id=booking.id) }}" class="text-success text-decoration-none">
+                                    {{ booking.trek.name }} <i class="bi bi-box-arrow-up-right small"></i>
+                                </a>
+                            </td>
+                            <td>₹{{ booking.total_price }}</td>
+                            <td><span class="badge bg-danger">Cancelled</span></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <div class="p-4 text-center text-muted">No cancelled bookings.</div>
+            {% endif %}
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+<style>
+    /* Table ke container ki height fix karna aur scrollbar lagana */
+    .custom-table-scroll {
+        max-height: 350px; /* Lagbhag 5-6 rows ek baar mein dikhengi */
+        overflow-y: auto;
+    }
+    
+    /* Table ka header sticky banana taaki scroll karte waqt heading na chhupe */
+    .custom-table-scroll thead th {
+        position: sticky;
+        top: 0;
+        z-index: 1;
+    }
+</style>

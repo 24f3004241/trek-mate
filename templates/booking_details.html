@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-4 mb-5">
+    
+    <div class="mb-4">
+        <a href="{{ url_for('my_treks') }}" class="text-decoration-none text-muted fw-bold">
+            <i class="bi bi-arrow-left"></i> Back to My Treks
+        </a>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8 mb-4">
+            <div class="card shadow-sm border-success h-100">
+                <div class="card-body p-4">
+                    <h2 class="fw-bold text-success mb-2">{{ booking.trek.name }}</h2>
+                    <p class="text-muted fs-5"><i class="bi bi-geo-alt-fill"></i> {{ booking.trek.location }}, {{ booking.trek.state }}, {{ booking.trek.country }}</p>
+                    
+                    <hr class="my-4">
+                    
+                    <h5 class="fw-bold mb-3">About This Trek</h5>
+                    <p class="text-muted" style="text-align: justify; line-height: 1.8;">
+                        {% if booking.trek.description %}
+                            {{ booking.trek.description }}
+                        {% else %}
+                            Detailed description for this trek will be updated soon.
+                        {% endif %}
+                    </p>
+
+                    <hr class="my-4">
+
+                    <h5 class="fw-bold mb-3">Important Details</h5>
+                    <div class="row mt-3 bg-light p-3 rounded">
+                        <div class="col-sm-6 mb-3">
+                            <strong class="text-dark">Start Date:</strong> <br>
+                            <span class="text-success fw-bold">{{ booking.trek.start_date.strftime('%d %b, %Y') }}</span>
+                        </div>
+                        <div class="col-sm-6 mb-3">
+                            <strong class="text-dark">End Date:</strong> <br>
+                            <span class="text-danger fw-bold">{{ booking.trek.end_date.strftime('%d %b, %Y') }}</span>
+                        </div>
+                        <div class="col-sm-6 mb-3 mb-sm-0">
+                            <strong class="text-dark">Duration:</strong> <br>
+                            <span class="text-muted">{{ booking.trek.duration }} Days</span>
+                        </div>
+                        <div class="col-sm-6">
+                            <strong class="text-dark">Difficulty Level:</strong> <br>
+                            <span class="text-muted">{{ booking.trek.difficulty }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-4">
+            
+            <div class="card shadow-sm border-primary mb-4">
+                <div class="card-header bg-primary text-white py-3">
+                    <h5 class="mb-0 fw-bold"><i class="bi bi-person-badge me-2"></i>Assigned Guide</h5>
+                </div>
+                <div class="card-body p-4">
+                    {% if booking.trek.staff %}
+                        <h5 class="fw-bold text-dark mb-3">{{ booking.trek.staff.user.username }}</h5>
+                        
+                        <p class="mb-3">
+                            <strong class="d-block text-muted small"><i class="bi bi-telephone-fill text-primary"></i> Phone Number</strong>
+                            <span class="fs-6">{{ booking.trek.staff.user.phone_number if booking.trek.staff.user.phone_number else 'Not Provided' }}</span>
+                        </p>
+                        
+                        <p class="mb-0">
+                            <strong class="d-block text-muted small"><i class="bi bi-envelope-fill text-primary"></i> Email Address</strong>
+                            <span class="fs-6">{{ booking.trek.staff.user.email }}</span>
+                        </p>
+                    {% else %}
+                        <div class="text-center py-3">
+                            <i class="bi bi-hourglass-split fs-1 text-warning mb-2"></i>
+                            <p class="text-muted fw-bold mb-0">Guide will be assigned soon.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="card shadow-sm border-secondary">
+                <div class="card-header bg-secondary text-white py-3">
+                    <h5 class="mb-0 fw-bold"><i class="bi bi-info-circle me-2"></i>My Booking Info</h5>
+                </div>
+                <div class="card-body p-4">
+                    <p class="mb-2"><strong>Booking ID:</strong> <span class="text-muted float-end">#BKG-{{ booking.id }}</span></p>
+                    <p class="mb-2"><strong>Seats Booked:</strong> <span class="text-muted float-end">{{ booking.seats_booked }}</span></p>
+                    <p class="mb-3"><strong>Amount Paid:</strong> <span class="text-success fw-bold float-end">₹{{ booking.total_price }}</span></p>
+                    
+                    <hr>
+                    
+                    <div class="d-flex justify-content-between align-items-center mb-0">
+                        <strong>Status:</strong> 
+                        {% if booking.booking_status == 'Confirmed' %}
+                            <span class="badge bg-success px-3 py-2">Confirmed</span>
+                        {% else %}
+                            <span class="badge bg-danger px-3 py-2">{{ booking.booking_status }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                {% if booking.booking_status == 'Confirmed' %}
+                <div class="card-footer bg-white border-0 text-center pb-4">
+                    <a href="{{ url_for('cancel_booking', booking_id=booking.id) }}" class="btn btn-outline-danger w-100 fw-bold" onclick="return confirm('Are you sure you want to cancel this booking?');">Cancel Booking</a>
+                </div>
+                {% endif %}
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

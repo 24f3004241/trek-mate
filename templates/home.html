@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="container-fluid bg-dark text-white text-center py-5 mb-5" style="background: linear-gradient(rgba(25, 135, 84, 0.85), rgba(33, 37, 41, 0.9)), url('https://images.unsplash.com/photo-1501555088652-021faa106b9b?q=80&w=2073&auto=format&fit=crop') no-repeat center center/cover; min-height: 55vh; display: flex; flex-direction: column; justify-content: center; border-radius: 0 0 20px 20px;">
+    <h1 class="display-4 fw-extrabold mb-3">Your Journey, Our Passion</h1>
+    <p class="lead mb-4 mx-auto opacity-90" style="max-width: 650px; font-size: 1.25rem;">
+        Discover hand-picked mountain trails, connect with certified local guides, and manage your outdoor adventures effortlessly with Trek Mate.
+    </p>
+    <div>
+        <a href="{{ url_for('explore') }}" class="btn btn-warning btn-lg fw-bold px-4 py-2 rounded shadow-sm text-dark">Find Your Next Trek →</a>
+    </div>
+</div>
+
+<div class="container mb-5">
+    
+    <div class="row align-items-center my-5 py-4">
+        <div class="col-md-6 mb-4 mb-md-0">
+            <h2 class="fw-bold text-success mb-3">Redefining Mountain Exploration</h2>
+            <p class="text-muted fs-5" style="text-align: justify; line-height: 1.7;">
+                Trek Mate is built to bring nature enthusiasts and verified trekking staff onto a single secure platform. We focus on real-time slot transparency, safety guidelines, and organized group planning so you can focus entirely on the summit.
+            </p>
+        </div>
+        <div class="col-md-6 text-center">
+            <div class="p-5 bg-success text-white rounded shadow-sm d-inline-block w-100" style="background: linear-gradient(135deg, #198754, #0f5132);">
+                <h4 class="fw-bold mb-2">📅 Real-Time Availability</h4>
+                <p class="mb-0 opacity-75">No hidden slots. No overbooking. What you see is exactly what you get.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="my-5 pt-4 text-center">
+        <h3 class="fw-bold mb-5 text-dark">How Trek Mate Works</h3>
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="p-4 bg-white rounded shadow-sm border h-100">
+                    <div class="text-success fs-1 mb-3"><i class="bi bi-search"></i></div>
+                    <h5 class="fw-bold">1. Discover Trails</h5>
+                    <p class="text-muted small mb-0">Use our smart catalogue to search for treks by location or choose a difficulty level that fits your experience.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="p-4 bg-white rounded shadow-sm border h-100">
+                    <div class="text-success fs-1 mb-3"><i class="bi bi-ticket-perforated"></i></div>
+                    <h5 class="fw-bold">2. Book Securely</h5>
+                    <p class="text-muted small mb-0">Select your seats, confirm the total price calculated in real-time, and get your spot instantly reserved in the database.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="p-4 bg-white rounded shadow-sm border h-100">
+                    <div class="text-success fs-1 mb-3"><i class="bi bi-person-check"></i></div>
+                    <h5 class="fw-bold">3. Meet Your Expert</h5>
+                    <p class="text-muted small mb-0">Access your private dashboard to find full contact details and phone number of the expert guide assigned to your group.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="my-5 pt-5">
+        <h3 class="fw-bold text-center mb-4 text-dark">Our Platform Highlights</h3>
+        <div class="row justify-content-center">
+            <div class="col-md-9">
+                <div class="card border-0 shadow-sm bg-light mb-3">
+                    <div class="card-body d-flex align-items-start p-4">
+                        <span class="badge bg-success p-2 me-3 fs-5"><i class="bi bi-shield-check"></i></span>
+                        <div>
+                            <h6 class="fw-bold text-dark mb-1">Strict Staff Screening</h6>
+                            <p class="text-muted small mb-0">Every guide must be programmatically approved by the system admin before they can lead an expedition.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="card border-0 shadow-sm bg-light mb-3">
+                    <div class="card-body d-flex align-items-start p-4">
+                        <span class="badge bg-success p-2 me-3 fs-5"><i class="bi bi-sliders"></i></span>
+                        <div>
+                            <h6 class="fw-bold text-dark mb-1">Advanced Search Filters</h6>
+                            <p class="text-muted small mb-0">Easily narrow down upcoming expeditions based on parameters like Hard, Moderate, or Easy terrain.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-light rounded p-5 text-center my-5 border shadow-sm">
+        <h3 class="fw-bold text-success mb-2">Adventure is Calling!</h3>
+        <p class="text-muted mb-4">Create an account or login to access your personal trek history dashboard.</p>
+        <a href="{{ url_for('register') }}" class="btn btn-success fw-bold px-4 me-2">Join as a Trekker</a>
+        <a href="{{ url_for('explore') }}" class="btn btn-outline-dark fw-bold px-4">Browse Active Treks</a>
+    </div>
+
+</div>
+{% endblock %}

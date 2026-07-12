@@ -54,7 +54,12 @@
                         </div>
 
                         <div class="d-flex justify-content-end gap-2">
-                            <a href="{{ url_for('trekker_dashboard') }}" class="btn btn-secondary fw-bold px-4">Cancel</a>
+                            {% if user.role == 'staff' %}
+                                <a href="{{ url_for('staff_dashboard') }}" class="btn btn-secondary fw-bold px-4">Cancel</a>
+                            {% else %}
+                                <a href="{{ url_for('trekker_dashboard') }}" class="btn btn-secondary fw-bold px-4">Cancel</a>
+                            {% endif %}
+                            
                             <button type="submit" class="btn btn-success fw-bold px-4">Save Changes</button>
                         </div>
                     </form>

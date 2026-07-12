@@ -18,8 +18,8 @@ class User(db.Model):
     username = db.Column(db.String(60), unique=True, nullable=False)
     email = db.Column(db.String(100), unique=True, nullable=False)
     password = db.Column(db.String(120), nullable=False)
-    role = db.Column(db.String(10), nullable=False, default='trekker')  # 'trekker' or 'staff'
-    status = db.Column(db.String(15), default='Active')  # 'active' or 'blacklisted'
+    role = db.Column(db.String(10), nullable=False, default='trekker')
+    status = db.Column(db.String(15), default='Active')
     full_name = db.Column(db.String(120))
     phone_number = db.Column(db.String(20), default="")
     gender = db.Column(db.String(10))
@@ -35,10 +35,7 @@ class StaffProfile(db.Model):
     __tablename__ = 'trekmate_staff'
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('trekmate_user.id'), nullable=False)
-    experience = db.Column(db.Integer)
-    contact_details = db.Column(db.String(100))
-    status = db.Column(db.String(15), default='pending') 
-
+    status = db.Column(db.String(15), default='pending')
 
     # Assigned Treks
     treks = db.relationship('Trek', backref='staff', lazy=True)
@@ -54,11 +51,11 @@ class Trek(db.Model):
     duration = db.Column(db.Integer, nullable=False) 
     difficulty = db.Column(db.String(20), nullable=False)
     available_slots = db.Column(db.Integer, nullable=False)
+    requested_slots = db.Column(db.Integer, nullable=True)
     price = db.Column(db.Float, nullable=False, default=0.0)
-    status = db.Column(db.String(15), nullable=False, default='upcoming')
+    status = db.Column(db.String(15), nullable=False, default='Upcoming')
     start_date = db.Column(db.Date, nullable=False)
     end_date = db.Column(db.Date, nullable=False)
-    assigned_staff = db.Column(db.String(100), nullable=True)  # Optional field to store staff name or ID
 
     staff_id = db.Column(db.Integer, db.ForeignKey('trekmate_staff.id'))
     
@@ -76,7 +73,6 @@ class Booking(db.Model):
     booking_date = db.Column(db.DateTime, default=datetime.utcnow)
 
     booking_status = db.Column(db.String(15), default='Booked')  # Status can be 'Booked', 'Cancelled', or 'Completed'
-    payment_status = db.Column(db.String(15), default='Pending')  # Payment status can be 'Pending', 'Paid', or 'Failed'
 
 
 with app.app_context():
@@ -105,7 +101,7 @@ def explore():
     difficulty_filter = request.args.get('difficulty', '')
     
     # Only show treks that haven't started yet
-    query = Trek.query.filter(Trek.start_date >= date.today())
+    query = Trek.query.filter(Trek.start_date >= date.today(), Trek.status == 'Upcoming')
     
     # Search Filter (by Name or Location)
     if search_query:
@@ -212,7 +208,7 @@ def trekker_dashboard():
 # Edit Profile Route
 @app.route("/edit_profile", methods=['GET', 'POST'])
 def edit_profile():
-    if session.get('user_id') == None or session.get('role') != 'trekker':
+    if session.get('user_id') == None:
         flash("Please log in first.", "danger")
         return redirect(url_for('login'))
         
@@ -496,6 +492,38 @@ def edit_trek(trek_id):
         
     # Agar GET request hai, toh form dikhao aur usme purana data bhej do
     return render_template("edit_trek.html", trek=trek, staff_list=approved_staff, today=date.today())
+
+# Approve Trek Slot Changes
+@app.route("/admin/approve_slots/<int:trek_id>")
+def admin_approve_slots(trek_id):
+    if session.get('role') != 'admin':
+        return redirect(url_for('login'))
+        
+    trek = Trek.query.get(trek_id)
+    if trek and trek.status == 'Pending Approval':
+        if trek.requested_slots is not None:
+            trek.available_slots = trek.requested_slots
+            trek.requested_slots = None # request completed, set it to none
+
+        trek.status = 'Upcoming'
+        db.session.commit()
+        flash("Trek slots approved and updated! Bookings re-opened!", "success")
+        
+    return redirect(url_for('manage_treks'))
+
+# Reject Trek Slot Changes
+@app.route("/admin/reject_slots/<int:trek_id>")
+def admin_reject_slots(trek_id):
+    if session.get('role') != 'admin':
+        return redirect(url_for('login'))
+        
+    trek = Trek.query.get(trek_id)
+    if trek and trek.status == 'Pending Approval':
+        trek.requested_slots = None # after request rejeted, set it to none
+        trek.status = 'Upcoming'
+        db.session.commit()
+        flash(f"Slot request rejected for {trek.name}. Trek returned to normal status.", "danger")
+    return redirect(url_for('manage_treks'))
 
 # Staff ki list dikhane wala route
 @app.route("/admin/manage_staff")
@@ -801,6 +829,104 @@ def booking_details(booking_id):
         
     return render_template("booking_details.html", booking=booking)
 
+
+# Staff Dashboard Route
+@app.route("/staff_dashboard")
+def staff_dashboard():
+    if session.get('user_id') == None or session.get('role') != 'staff':
+        flash("Please log in as staff to access this page.", "warning")
+        return redirect(url_for('login'))
+    
+    user = User.query.get(session.get('user_id'))
+    staff_profile = user.staff_profile
+
+    # for blacklisted staff
+    if staff_profile and staff_profile.status == 'Blacklisted':
+        flash("Your account has been blacklisted.", "danger")
+    
+    assigned_treks = []
+    active_treks = []
+    completed_treks = []
+    total_participants = 0
+
+    if staff_profile:
+        assigned_treks = Trek.query.filter_by(staff_id=staff_profile.id).order_by(Trek.start_date.asc()).all()
+        
+        for trek in assigned_treks:
+            # Participants calculation
+            for booking in trek.bookings:
+                if booking.booking_status == 'Confirmed':
+                    total_participants += booking.seats_booked
+            
+            # Differenciate Active and Completed
+            if trek.status == 'Completed':
+                completed_treks.append(trek)
+            else:
+                active_treks.append(trek)
+
+    return render_template("staff_dash.html", 
+                           user=user, 
+                           staff_profile=staff_profile, 
+                           active_treks=active_treks,
+                           completed_treks=completed_treks,
+                           total_assigned=len(assigned_treks),
+                           total_participants=total_participants,
+                           total_completed=len(completed_treks))
+
+
+# Staff Manage Trek
+@app.route("/staff/manage_trek/<int:trek_id>", methods=['GET', 'POST'])
+def staff_manage_trek(trek_id):
+    if session.get('user_id') == None or session.get('role') != 'staff':
+        flash("Access Denied. Please log in as staff.", "danger")
+        return redirect(url_for('login'))
+        
+    user = User.query.get(session.get('user_id'))
+    staff_profile = user.staff_profile
+
+    # block blacklisted staff
+    if staff_profile and staff_profile.status == 'Blacklisted':
+        flash("Your account is blacklisted. You cannot manage treks.", "danger")
+        return redirect(url_for('staff_dashboard'))
+
+    trek = Trek.query.get(trek_id)
+    
+    if trek == None or trek.staff_id != staff_profile.id:
+        flash("Unauthorized Access!", "danger")
+        return redirect(url_for('staff_dashboard'))
+        
+    if request.method == 'POST':
+        action = request.form.get('action')
+        
+        if action == 'edit_slots':
+            new_slots = int(request.form.get('new_slots'))
+            trek.requested_slots = new_slots
+            trek.status = 'Pending Approval'
+            flash("Slot change requested! Sent to Admin for approval. Bookings are now locked.", "info")
+            
+        elif action == 'close_booking':
+            trek.status = 'Closed'
+            flash("Bookings closed manually for this trek.", "warning")
+            
+        elif action == 'open_booking':
+            trek.status = 'Upcoming'
+            flash("Bookings are now open again.", "success")
+            
+        # staff can mark trek as started and completed
+        elif action == 'start_trek':
+            trek.status = 'Ongoing'
+            flash("Trek has officially started! (Status: Ongoing)", "success")
+            
+        elif action == 'complete_trek':
+            trek.status = 'Completed'
+            flash("Trek marked as successfully completed!", "success")
+            
+        db.session.commit()
+        return redirect(url_for('staff_manage_trek', trek_id=trek.id))
+        
+    # Fetch Participants full details
+    participants = Booking.query.filter_by(trek_id=trek.id, booking_status='Confirmed').all()
+    return render_template("staff_manage_trek.html", trek=trek, participants=participants)
 
 if __name__ == '__main__':
     app.run(debug=True)

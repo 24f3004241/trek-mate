@@ -62,7 +62,6 @@
                         <!-- Participants Column -->
                         <td>
                             <h6 class="mb-1 fw-bold">{{ trek.bookings|length }}</h6>
-                            <a href="{{ url_for('trek_participants', trek_id=trek.id) }}" class="btn btn-dark btn-sm" style="font-size: 0.75rem;">View List</a>
                         </td>
                         
                         <!-- Staff Column -->
@@ -76,28 +75,37 @@
                         </td>
                         
                         <!-- Booking Status Column -->
-                        <td>
-                            {% if trek.start_date <= today or trek.available_slots <= 0 or trek.status == 'Closed' %}
-                                <span class="text-danger fw-bold">Closed</span>
+                        <td class="fw-bold">
+                            {% if trek.status == 'Upcoming' and trek.available_slots > 0 %}
+                                <span class="text-success fw-bold">Open</span>
+                            {% elif trek.status == 'Upcoming' and trek.available_slots == 0 %}
+                                <span class="text-danger">Sold Out</span>
                             {% else %}
-                                <span class="text-success fw-bold" style="letter-spacing: 0.5px;">Open</span>
+                                <span class="text-danger">Closed</span>
                             {% endif %}
                         </td>
                         
-                        <!-- Trek State Column (Dynamic Logic) -->
+                        <!-- Trek State Column -->
                         <td>
-                            {% if trek.end_date < today %}
-                                <span class="badge bg-dark">Completed</span>
-                            {% elif trek.start_date > today %}
+                            {% if trek.status == 'Upcoming' or trek.status == 'Closed' %}
                                 <span class="badge bg-secondary">Upcoming</span>
-                            {% else %}
+                            {% elif trek.status == 'Pending Approval' %}
+                                <span class="badge bg-warning text-dark">Pending Admin</span>
+                            {% elif trek.status == 'Ongoing' %}
                                 <span class="badge bg-success">Ongoing</span>
+                            {% elif trek.status == 'Completed' %}
+                               <span class="badge bg-dark">Completed</span>
                             {% endif %}
                         </td>
                         
                         <!-- Actions Column (Stacked Buttons) -->
                         <td>
                             <div class="d-flex gap-1 justify-content-center">
+                                {% if trek.status == 'Pending Approval' %}
+                                    <a href="{{ url_for('admin_approve_slots', trek_id=trek.id) }}" class="btn btn-sm btn-success fw-bold text-white px-2">Approve</a>
+                                    <a href="{{ url_for('admin_reject_slots', trek_id=trek.id) }}" class="btn btn-sm btn-danger fw-bold text-white px-2">Reject</a>
+                                {% endif %}
+
                                 <a href="{{ url_for('trek_details', trek_id=trek.id) }}" class="btn btn-dark btn-sm">View</a>
 
                                 {% if trek.end_date >= today %}

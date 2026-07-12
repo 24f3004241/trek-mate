@@ -1,0 +1,167 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-4 mb-5">
+    
+    <div class="row mb-4 align-items-center">
+        <div class="col-md-8">
+            <h3 class="text-success fw-bold">Welcome Guide, {{ user.username }}!</h3>
+            <p class="text-muted">Manage your profile and view your upcoming assigned treks.</p>
+        </div>
+        <div class="col-md-4 text-md-end">
+            {% if staff_profile.status == 'Approved' %}
+                <span class="badge bg-success fs-6 px-3 py-2"><i class="bi bi-patch-check-fill"></i> Verified Guide</span>
+            {% else %}
+                <span class="badge bg-warning text-dark fs-6 px-3 py-2"><i class="bi bi-hourglass-split"></i> Pending Approval</span>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-success mb-5">
+        <div class="card-header bg-success-subtle border-bottom border-success py-3 d-flex justify-content-between align-items-center">
+            <h5 class="mb-0 fw-bold text-success"><i class="bi bi-person-badge me-2"></i>My Guide Profile</h5>
+            <a href="{{ url_for('edit_profile') }}" class="btn btn-success btn-sm fw-bold px-3">
+                <i class="bi bi-pencil-square"></i> Edit Profile
+            </a>
+        </div>
+        <div class="card-body p-4">
+            <div class="row fs-5">
+                <div class="col-md-6">
+                    <p class="mb-3"><strong>Username:</strong> <span class="text-muted">{{ user.username }}</span></p>
+                    <p class="mb-3"><strong>Phone Number:</strong> <span class="text-muted">{{ user.phone_number | default('Not Provided', true) }}</span></p>
+                    <p class="mb-3"><strong>Gender:</strong> <span class="text-muted">{{ user.gender | default('Not Provided', true) }}</span></p>
+                    <p class="mb-3"><strong>City:</strong> <span class="text-muted">{{ user.city | default('N/A', true) }}</span></p>                   
+                </div>
+                <div class="col-md-6">
+                    <p class="mb-3"><strong>Full Name:</strong> <span class="text-muted">{{ user.full_name | default('Not Provided', true) }}</span></p>
+                    <p class="mb-3"><strong>Email Address:</strong> <span class="text-muted">{{ user.email }}</span></p>
+                    <p class="mb-3"><strong>Date of Birth:</strong> <span class="text-muted">
+                        {% if user.date_of_birth %}
+                            {{ user.date_of_birth.strftime('%d %m, %Y') }}
+                        {% else %}
+                            Not Provided
+                        {% endif %}
+                    </span></p>
+                    <p class="mb-3"><strong>State:</strong> <span class="text-muted">{{ user.state | default('N/A', true) }}</span></p>
+                </div>
+            </div>
+            {% if user.bio %}
+            <div class="mt-3 pt-3 border-top">
+                <p class="mb-1"><strong>Bio:</strong></p>
+                <p class="text-muted mb-0">{{ user.bio }}</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="row mb-5">
+        <div class="col-md-4 mb-3">
+            <div class="card bg-success text-white shadow h-100 border-0" style="border-radius: 12px;">
+                <div class="card-body text-center py-4">
+                    <h1 class="display-4 fw-bold">{{ total_assigned }}</h1>
+                    <h6 class="mb-0 text-uppercase fw-bold opacity-75">Total Assigned Treks</h6>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="card bg-dark text-white shadow h-100 border-0" style="border-radius: 12px;">
+                <div class="card-body text-center py-4">
+                    <h1 class="display-4 fw-bold">{{ total_participants }}</h1>
+                    <h6 class="mb-0 text-uppercase fw-bold opacity-75">Total Participants</h6>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="card bg-light text-success shadow h-100 border-success" style="border-radius: 12px; border-width: 2px;">
+                <div class="card-body text-center py-4">
+                    <h1 class="display-4 fw-bold">{{ completed_treks|length }}</h1>
+                    <h6 class="mb-0 text-uppercase fw-bold opacity-75">Total Completed Treks</h6>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <h3 class="fw-bold mb-4 text-dark border-bottom border-success pb-2">
+        <i class="bi bi-map text-success"></i> My Assigned Treks
+    </h3>
+    
+    <h5 class="fw-bold mb-3 text-success">Active & Upcoming</h5>
+    <div class="card shadow-sm border-dark mb-5">
+        <div class="card-body p-0 table-responsive custom-table-scroll">
+            <table class="table table-hover mb-0 text-center align-middle">
+                <thead class="table-success">
+                    <tr>
+                        <th>Trek Name</th>
+                        <th>Location</th>
+                        <th>Participants</th>
+                        <th>Slots Left</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for trek in active_treks %}
+                    <tr>
+                        <td class="fw-bold text-success">{{ trek.name }}</td>
+                        <td>{{ trek.location }}</td>
+                        <td>
+                            {% set count = namespace(total=0) %}
+                            {% for b in trek.bookings if b.booking_status == 'Confirmed' %}
+                                {% set count.total = count.total + b.seats_booked %}
+                            {% endfor %}
+                            <span class="badge bg-secondary">{{ count.total }}</span>
+                        </td>
+                        <td><span class="badge bg-dark">{{ trek.available_slots }}</span></td>
+                        <td>
+                            {% if trek.status == 'Upcoming' %} <span class="badge bg-success">Open</span>
+                            {% elif trek.status == 'Pending Approval' %} <span class="badge bg-warning text-dark">Pending Admin</span>
+                            {% elif trek.status == 'Ongoing' %} <span class="badge bg-primary">Ongoing</span>
+                            {% else %} <span class="badge bg-danger">Closed</span> {% endif %}
+                        </td>
+                        <td>
+                            <a href="{{ url_for('staff_manage_trek', trek_id=trek.id) }}" class="btn btn-sm btn-outline-success fw-bold">Manage</a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="6" class="text-muted p-4">You have no active or upcoming treks assigned.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <h5 class="fw-bold mb-3 text-secondary">Past Completed History</h5>
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-0 table-responsive custom-table-scroll">
+            <table class="table table-light table-hover mb-0 text-center align-middle">
+                <thead class="table-secondary">
+                    <tr>
+                        <th>Trek Name</th>
+                        <th>Location</th>
+                        <th>Start Date</th>
+                        <th>End Date</th>
+                        <th>Final Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for trek in completed_treks %}
+                    <tr>
+                        <td class="fw-bold text-muted">{{ trek.name }}</td>
+                        <td class="text-muted">{{ trek.location }}</td>
+                        <td class="text-muted">{{ trek.start_date.strftime('%d %b, %Y') }}</td>
+                        <td class="text-muted">{{ trek.end_date.strftime('%d %b, %Y') }}</td>
+                        <td><span class="badge bg-dark">Completed</span></td>
+                        <td>
+                            <a href="{{ url_for('staff_manage_trek', trek_id=trek.id) }}" class="btn btn-sm btn-secondary fw-bold">View Data</a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="6" class="text-muted p-4">No completed treks yet.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

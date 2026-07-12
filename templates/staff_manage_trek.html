@@ -1,0 +1,167 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-4 mb-5">
+    
+    <div class="mb-4">
+        <a href="{{ url_for('staff_dashboard') }}" class="text-decoration-none text-muted fw-bold">
+            <i class="bi bi-arrow-left"></i> Back to Dashboard
+        </a>
+    </div>
+
+    <div class="row g-4 mb-5">
+        
+        <div class="col-lg-7">
+            <div class="card shadow-sm h-100 border-success">
+                <div class="card-header bg-success text-white py-3">
+                    <h5 class="mb-0 fw-bold"><i class="bi bi-info-circle-fill me-2"></i>Trek Full Information</h5>
+                </div>
+                <div class="card-body p-4">
+                    <h3 class="fw-bold text-success mb-3">{{ trek.name }}</h3>
+                    
+                    <div class="row g-3 fs-6">
+                        <div class="col-sm-6">
+                            <p class="mb-2"><strong>Location:</strong> <span class="text-muted">{{ trek.location }}</span></p>
+                            <p class="mb-2"><strong>State/Country:</strong> <span class="text-muted">{{ trek.state }}, {{ trek.country }}</span></p>
+                            <p class="mb-2"><strong>Duration:</strong> <span class="text-muted">{{ trek.duration }} Days</span></p>
+                            <p class="mb-2"><strong>Difficulty Level:</strong> <span class="badge bg-secondary">{{ trek.difficulty }}</span></p>
+                        </div>
+                        <div class="col-sm-6">
+                            <p class="mb-2"><strong>Start Date:</strong> <span class="text-muted">{{ trek.start_date.strftime('%d %b, %Y') }}</span></p>
+                            <p class="mb-2"><strong>End Date:</strong> <span class="text-muted">{{ trek.end_date.strftime('%d %b, %Y') }}</span></p>
+                            <p class="mb-2"><strong>Price per Seat:</strong> <span class="text-success fw-bold">₹{{ trek.price }}</span></p>
+                            <p class="mb-2"><strong>Current Slots Left:</strong> <span class="badge bg-dark">{{ trek.available_slots }}</span></p>
+                        </div>
+                    </div>
+                    
+                    {% if trek.description %}
+                    <div class="mt-3 pt-3 border-top">
+                        <strong class="d-block mb-1 text-dark">Description:</strong>
+                        <p class="text-muted small mb-0">{{ trek.description }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="card shadow-sm h-100 border-dark bg-light">
+                <div class="card-header bg-dark text-white py-3 text-center">
+                    <h5 class="mb-0 fw-bold"><i class="bi bi-sliders me-2"></i>Guide Control Panel</h5>
+                </div>
+                <div class="card-body d-flex flex-column justify-content-between p-4">
+                    
+                    <div class="text-center mb-4">
+                        <h6 class="text-muted text-uppercase fw-bold small mb-2">Current Live Status</h6>
+                        {% if trek.status == 'Upcoming' %}
+                            <span class="badge bg-success fs-5 px-4 py-2"><i class="bi bi-unlock-fill"></i> Bookings Open</span>
+                        {% elif trek.status == 'Closed' %}
+                            <span class="badge bg-danger fs-5 px-4 py-2"><i class="bi bi-lock-fill"></i> Bookings Closed</span>
+                        {% elif trek.status == 'Pending Approval' %}
+                            <span class="badge bg-warning text-dark fs-5 px-4 py-2"><i class="bi bi-hourglass-split"></i> Pending Admin</span>
+                        {% elif trek.status == 'Ongoing' %}
+                            <span class="badge bg-primary fs-5 px-4 py-2"><i class="bi bi-play-btn-fill"></i> Trek Ongoing</span>
+                        {% elif trek.status == 'Completed' %}
+                            <span class="badge bg-dark fs-5 px-4 py-2"><i class="bi bi-check-circle-fill"></i> Completed</span>
+                        {% endif %}
+                    </div>
+
+                    {% if trek.status not in ['Ongoing', 'Completed'] %}
+                    <div class="bg-white p-3 border rounded mb-4 shadow-sm">
+                        <label class="fw-bold text-dark small mb-2 d-block">Request New Total Slots:</label>
+                        <form action="{{ url_for('staff_manage_trek', trek_id=trek.id) }}" method="POST" class="d-flex gap-2">
+                            <input type="hidden" name="action" value="edit_slots">
+                            <input type="number" name="new_slots" class="form-control form-control-sm fw-bold" value="{{ trek.available_slots }}" min="0" required>
+                            <button type="submit" class="btn btn-sm btn-warning fw-bold text-dark">Submit Request</button>
+                        </form>
+                        {% if trek.status == 'Pending Approval' %}
+                            <small class="text-danger fw-bold mt-2 d-block"><i class="bi bi-exclamation-triangle-fill"></i> Locked until Admin approves/rejects.</small>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+
+                    <div class="d-grid gap-2">
+                        
+                        {% if trek.status == 'Upcoming' %}
+                            <form action="{{ url_for('staff_manage_trek', trek_id=trek.id) }}" method="POST" class="d-grid">
+                                <input type="hidden" name="action" value="close_booking">
+                                <button type="submit" class="btn btn-outline-danger fw-bold py-2"><i class="bi bi-lock"></i> Close Bookings Manually</button>
+                            </form>
+                        {% elif trek.status == 'Closed' %}
+                            <form action="{{ url_for('staff_manage_trek', trek_id=trek.id) }}" method="POST" class="d-grid">
+                                <input type="hidden" name="action" value="open_booking">
+                                <button type="submit" class="btn btn-outline-success fw-bold py-2"><i class="bi bi-unlock"></i> Re-Open Bookings</button>
+                            </form>
+                        {% endif %}
+
+                        {% if trek.status in ['Upcoming', 'Closed'] %}
+                            <form action="{{ url_for('staff_manage_trek', trek_id=trek.id) }}" method="POST" class="d-grid mt-2">
+                                <input type="hidden" name="action" value="start_trek">
+                                <button type="submit" class="btn btn-primary fw-bold py-2 fs-6" onclick="return confirm('Are you sure you want to start the trek?');">
+                                    <i class="bi bi-play-fill"></i> Mark Trek as Started
+                                </button>
+                            </form>
+                        {% elif trek.status == 'Ongoing' %}
+                            <form action="{{ url_for('staff_manage_trek', trek_id=trek.id) }}" method="POST" class="d-grid">
+                                <input type="hidden" name="action" value="complete_trek">
+                                <button type="submit" class="btn btn-success fw-bold py-2 fs-6" onclick="return confirm('Are you sure the trek is finished?');">
+                                    <i class="bi bi-check-lg"></i> Mark Trek as Completed
+                                </button>
+                            </form>
+                        {% endif %}
+                        
+                        {% if trek.status == 'Completed' %}
+                            <div class="alert alert-secondary text-center fw-bold mb-0 py-2">This Adventure has ended.</div>
+                        {% endif %}
+
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <h4 class="fw-bold text-dark mb-3"><i class="bi bi-people-fill text-success me-2"></i>Registered Participants Details</h4>
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-0 table-responsive custom-table-scroll">
+            <table class="table table-hover mb-0 align-middle text-center">
+                <thead class="table-success">
+                    <tr>
+                        <th>Booking ID</th>
+                        <th>Trekker Name</th>
+                        <th>Gender</th> <th>Email</th>
+                        <th>Phone Number</th>
+                        <th>Seats Booked</th>
+                        <th>Booking Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for booking in participants %}
+                    <tr>
+                        <td class="fw-bold">#BKG-{{ booking.id }}</td>
+                        <td class="text-capitalize fw-bold text-dark">{{ booking.user.full_name | default(booking.user.username, true) }}</td>
+                        <td class="text-muted">{{ booking.user.gender | default('N/A', true) }}</td>
+                        <td>
+                            <a href="mailto:{{ booking.user.email }}" class="text-decoration-none text-primary">
+                                <i class="bi bi-envelope"></i> {{ booking.user.email }}
+                            </a>
+                        </td>
+                        <td class="text-muted">{{ booking.user.phone_number | default('Not Provided', true) }}</td>
+                        <td><span class="badge bg-dark px-3 py-1">{{ booking.seats_booked }} Seats</span></td>
+                        <td class="text-muted small">{{ booking.booking_date.strftime('%d %b, %Y - %H:%M') }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="p-5 text-center text-muted">
+                            <i class="bi bi-person-x fs-1 mb-2 opacity-50 d-block"></i>
+                            <h6 class="fw-bold mb-0">No confirmed participants found for this trek.</h6>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

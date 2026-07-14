@@ -72,7 +72,7 @@ class Booking(db.Model):
     total_price = db.Column(db.Float, nullable=False)
     booking_date = db.Column(db.DateTime, default=datetime.utcnow)
 
-    booking_status = db.Column(db.String(15), default='Booked')  # Status can be 'Booked', 'Cancelled', or 'Completed'
+    booking_status = db.Column(db.String(15), default='Confirmed')
 
 
 with app.app_context():
@@ -84,7 +84,6 @@ with app.app_context():
         default_admin = User(username="admin", email="admin@trekmate.com", password=sec_pass, role="admin")
         db.session.add(default_admin)
         db.session.commit()
-        print("Default admin user created!")
 
 # Landing page
 @app.route('/')
@@ -103,7 +102,7 @@ def explore():
     # Only show treks that haven't started yet
     query = Trek.query.filter(Trek.start_date >= date.today(), Trek.status == 'Upcoming')
     
-    # Search Filter (by Name or Location)
+    # Search Filter
     if search_query:
         query = query.filter(
             (Trek.name.ilike(f"%{search_query}%")) |
@@ -242,22 +241,24 @@ def edit_profile():
 def logout():
     session.clear() # Clear all session data
     flash("You have been logged out successfully.", "success")
-    return redirect(url_for('login')) # Redirect to login page after logout
+    return redirect(url_for('login'))
 
 
 @app.route("/admin_dashboard")
 def admin_dashboard():
-    # Security Check: If user is not logged in or not an admin, redirect to login
     if session.get('user_id') == None or session.get('role') != 'admin':
         flash("Please log in to access the admin dashboard.", "error")
         return redirect(url_for('login'))
     
-    # Extract counts from the database for trekkers, staff, treks, and bookings
-    total_users = User.query.filter_by(role='trekker').count()
-    total_staff = User.query.filter_by(role='staff').count()
-    total_treks = Trek.query.count()
+    # Extract counts but IGNORE Blocked Users, Blacklisted Staff, and Deleted Treks
+    total_users = User.query.filter(User.role == 'trekker', User.status != 'Blocked').count()
+    total_staff = User.query.filter(User.role == 'staff', User.status != 'Blacklisted').count()
+    total_treks = Trek.query.filter(Trek.status != 'Deleted').count()
+    
     total_bookings = Booking.query.count()
-    all_treks = Trek.query.all()  # Fetch all treks to display in the admin dashboard
+    
+    # Fetch only active treks to display in the admin dashboard table (Hide deleted ones)
+    all_treks = Trek.query.filter(Trek.status != 'Deleted').all() 
 
     # Send the counts and trek list to html template for rendering
     return render_template("admin_dash.html", 
@@ -267,7 +268,6 @@ def admin_dashboard():
                            t_bookings=total_bookings,
                            treks=all_treks,
                            today=date.today())
-
    
 @app.route("/admin/add_trek", methods=['GET', 'POST'])
 def add_trek():
@@ -306,7 +306,9 @@ def add_trek():
             overlapping_trek = Trek.query.filter(
                 Trek.staff_id == staff_id,
                 Trek.start_date <= end_obj,
-                Trek.end_date >= start_obj
+                Trek.end_date >= start_obj,
+                Trek.status!='Cancelled',
+                Trek.status!='Deleted'
             ).first()
             if overlapping_trek:
                 flash("Selected staff is already assigned to another trek during the same period!", "danger")
@@ -344,7 +346,7 @@ def manage_treks():
         return redirect(url_for('login'))
     
     search_query = request.args.get('search', '').strip()
-    query = Trek.query
+    query = Trek.query.filter(Trek.status != 'Deleted')
     
     if search_query:
         # Find staff users whose usernames match the search query
@@ -374,13 +376,6 @@ def manage_treks():
     today = date.today()
     return render_template("manage_treks.html", treks=all_treks, today=today, search_query=search_query)
 
-
-# View participants of a specific trek
-@app.route("/admin/trek_participants/<int:trek_id>")
-def trek_participants(trek_id):
-    if session.get('user_id') == None or session.get('role') != 'admin':
-        return redirect(url_for('login'))
-    return f"Participants list for Trek ID: {trek_id}"
 
 #  View Trek Details Route
 @app.route("/admin/trek_details/<int:trek_id>")
@@ -424,15 +419,16 @@ def delete_trek(trek_id):
     # Search trek by ID in the database
     trek_to_delete = Trek.query.get(trek_id)
     
-    if trek_to_delete != None:
-        db.session.delete(trek_to_delete)
+    if trek_to_delete:
+        trek_to_delete.status = 'Deleted'
+        trek_to_delete.staff=None
         db.session.commit()
         flash("Trek successfully deleted!", "success")
         
     return redirect(url_for('manage_treks'))
 
 
-# 3. Edit Trek (Show pre_filled data and update it)
+# Edit Trek (Show pre_filled data and update it)
 @app.route("/admin/edit_trek/<int:trek_id>", methods=['GET', 'POST'])
 def edit_trek(trek_id):
     if session.get('user_id') == None or session.get('role') != 'admin':
@@ -525,7 +521,7 @@ def admin_reject_slots(trek_id):
         flash(f"Slot request rejected for {trek.name}. Trek returned to normal status.", "danger")
     return redirect(url_for('manage_treks'))
 
-# Staff ki list dikhane wala route
+# Manage Staff route
 @app.route("/admin/manage_staff")
 def manage_staff():
     if session.get('user_id') == None or session.get('role') != 'admin':
@@ -549,7 +545,7 @@ def manage_staff():
         # Now filter the staff profiles based on the matching user IDs
         query = query.filter(StaffProfile.user_id.in_(matching_user_ids))
 
-    # Database se saare staff ki profiles nikalna
+    # fetch all the staff profiles from the database
     staff_list = query.all()
     
     return render_template("manage_staff.html", staff_list=staff_list, search_query=search_query)
@@ -563,7 +559,7 @@ def approve_action(staff_id):
     staff = StaffProfile.query.get(staff_id)
     if staff != None:
         staff.status = 'Approved'
-        db.session.commit() # Data save karna zaruri hai
+        db.session.commit()
         flash("Staff successfully approved!", "success")
         
     return redirect(url_for('manage_staff'))
@@ -583,26 +579,6 @@ def blacklist_action(staff_id):
         
     return redirect(url_for('manage_staff'))
 
-
-#  Remove Staff Action
-@app.route("/admin/remove_staff/<int:staff_id>")
-def remove_staff_action(staff_id):
-    if session.get('user_id') == None or session.get('role') != 'admin':
-        return redirect(url_for('login'))
-        
-    staff = StaffProfile.query.get(staff_id)
-    if staff != None:
-        user_account = staff.user
-        # Pehle staff profile delete karo, phir uska user account 
-        # Taaki system me koi khali data na bache
-        db.session.delete(staff)
-        if user_account:
-            db.session.delete(user_account)
-        
-        db.session.commit()
-        flash("Staff completely removed from the system!", "success")
-        
-    return redirect(url_for('manage_staff'))
 
 #  users route
 @app.route("/admin/manage_users")
@@ -642,7 +618,7 @@ def block_user(user_id):
     if session.get('role') != 'admin':
         return redirect(url_for('login'))
         
-    # User ko database se nikalna
+    # fetch user from database
     user = User.query.get(user_id)
     
     if user:
@@ -664,26 +640,13 @@ def unblock_user(user_id):
     user = User.query.get(user_id)
     
     if user:
-        # Status ko wapas 'Active' set karna
+        # Set status to active
         user.status = 'Active'
         
         db.session.commit()
         
     return redirect(url_for('manage_users'))
 
-# Remove User (Trekker) Action
-@app.route("/admin/remove_user/<int:user_id>")
-def remove_user(user_id):
-    if session.get('user_id') == None or session.get('role') != 'admin':
-        return redirect(url_for('login'))
-
-    user = User.query.get(user_id)
-    if user and user.role != 'admin':  # Admin do not remove himself
-        db.session.delete(user)
-        db.session.commit()
-        flash("User has been removed!", "success")
-
-    return redirect(url_for('manage_users'))
 
 @app.route("/admin/view_user_profile/<int:user_id>")
 def view_user_profile(user_id):
@@ -711,6 +674,11 @@ def book_trek(trek_id):
     if 'user_id' not in session:
         flash("Please log in to book a trek.", "warning")
         return redirect(url_for('login'))
+
+    user = User.query.get(session['user_id'])
+    if user.status == 'Blocked':
+        flash("Your account has been blocked by Admin. You cannot book new treks.","danger")
+        return redirect(url_for('my_treks'))
         
     trek = Trek.query.get_or_404(trek_id)
     
@@ -769,13 +737,13 @@ def cancel_booking(booking_id):
     # change booking status
     booking.booking_status = 'Cancelled'
 
-    # Jo seats book hui thi, unhe wapas trek mein add kar do
+    # ReAdding the seats to slots
     booking.trek.available_slots += booking.seats_booked
 
     db.session.commit()
     flash("Booking cancelled successfully. Seats have been refunded.", "success")
 
-    # Agar admin cancel kar raha hai toh admin page par bhejo, warna user page par
+    # if admin cancels redirect to admin manage booking page and else user's my treks page
     if session.get('role') == 'admin':
         return redirect(url_for('manage_bookings'))
     return redirect(url_for('my_treks'))
@@ -790,18 +758,18 @@ def my_treks():
     user = User.query.get(session['user_id'])
     today = date.today()
     
-    # Lists banayenge alag-alag tables ke liye
+    # Lists for different- different tables
     upcoming_bookings = []
     current_bookings = []
     completed_bookings = []
     cancelled_bookings = []
     
     for booking in user.bookings:
-        if booking.booking_status == 'Cancelled':
+        if booking.booking_status == 'Cancelled' or booking.trek.status == 'Deleted':
             cancelled_bookings.append(booking)
-        elif booking.trek.end_date < today:
+        elif booking.trek.status == 'Completed':
             completed_bookings.append(booking)
-        elif booking.trek.start_date <= today and booking.trek.end_date >= today:
+        elif booking.trek.status == 'Ongoing':
             current_bookings.append(booking)
         else:
             upcoming_bookings.append(booking)
@@ -822,7 +790,7 @@ def booking_details(booking_id):
         
     booking = Booking.query.get_or_404(booking_id)
     
-    # Koi user kisi aur user ki details na dekh paye
+    # One user cannot see other user's detail
     if booking.user_id != session['user_id']:
         flash("Access Denied! You can only view your own bookings.", "danger")
         return redirect(url_for('my_treks'))
@@ -853,23 +821,27 @@ def staff_dashboard():
         assigned_treks = Trek.query.filter_by(staff_id=staff_profile.id).order_by(Trek.start_date.asc()).all()
         
         for trek in assigned_treks:
+            if trek.status == 'Deleted':
+                continue
             # Participants calculation
             for booking in trek.bookings:
                 if booking.booking_status == 'Confirmed':
                     total_participants += booking.seats_booked
             
-            # Differenciate Active and Completed
+            # Differenciate Active and Completed treks
             if trek.status == 'Completed':
                 completed_treks.append(trek)
             else:
                 active_treks.append(trek)
+
+    valid_assigned_count = len(active_treks) + len(completed_treks)
 
     return render_template("staff_dash.html", 
                            user=user, 
                            staff_profile=staff_profile, 
                            active_treks=active_treks,
                            completed_treks=completed_treks,
-                           total_assigned=len(assigned_treks),
+                           total_assigned=valid_assigned_count,
                            total_participants=total_participants,
                            total_completed=len(completed_treks))
 

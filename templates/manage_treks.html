@@ -98,25 +98,29 @@
                             {% endif %}
                         </td>
                         
-                        <!-- Actions Column (Stacked Buttons) -->
+                        <!-- Actions Column -->
                         <td>
                             <div class="d-flex gap-1 justify-content-center">
                                 {% if trek.status == 'Pending Approval' %}
-                                    <a href="{{ url_for('admin_approve_slots', trek_id=trek.id) }}" class="btn btn-sm btn-success fw-bold text-white px-2">Approve</a>
-                                    <a href="{{ url_for('admin_reject_slots', trek_id=trek.id) }}" class="btn btn-sm btn-danger fw-bold text-white px-2">Reject</a>
+                                    <a href="{{ url_for('admin_approve_slots', trek_id=trek.id) }}" class="btn btn-sm btn-success fw-bold text-white">Approve</a>
+                                    <a href="{{ url_for('admin_reject_slots', trek_id=trek.id) }}" class="btn btn-sm btn-danger fw-bold text-white">Reject</a>
                                 {% endif %}
 
                                 <a href="{{ url_for('trek_details', trek_id=trek.id) }}" class="btn btn-dark btn-sm">View</a>
 
-                                {% if trek.end_date >= today %}
-                                    <a href="{{ url_for('edit_trek', trek_id=trek.id) }}" class="btn btn-warning btn-sm fw-bold">Edit</a>
+                                {% if trek.status in ['Ongoing', 'Completed'] %}
+                                    <button class="btn btn-sm btn-warning" disabled>Edit</button>
                                 {% else %}
-                                    <button class="btn btn-secondary btn-sm" disabled>Edit</button>
+                                    <a href="{{ url_for('edit_trek', trek_id=trek.id) }}" class="btn btn-sm btn-warning">Edit</a>
                                 {% endif %}
-
-                                <a href="{{ url_for('delete_trek', trek_id=trek.id) }}" 
+                                
+                                {% if trek.status == 'Ongoing' %}
+                                    <button class="btn btn-sm btn-danger" disabled>Delete</button>
+                                {% else %}
+                                    <a href="{{ url_for('delete_trek', trek_id=trek.id) }}" 
                                        class="btn btn-danger btn-sm fw-bold"
                                        onclick="return confirm('Are you sure you want to delete this trek?');">Delete</a>
+                                {% endif %}
                             </div>
                         </td>
                     </tr>

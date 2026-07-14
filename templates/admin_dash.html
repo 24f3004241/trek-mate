@@ -99,12 +99,16 @@
                                 <td>{{ trek.start_date.strftime('%d-%b-%Y') }}</td>
                                 <td>{{ trek.available_slots }}</td>
                                 <td>
-                                    {% if trek.start_date > today %}
+                                    {% if trek.status == 'Upcoming' %}
                                         <span class="badge bg-secondary">Upcoming</span>
-                                    {% elif trek.end_date < today %}
-                                        <span class="badge bg-dark">Completed</span>
-                                    {% else %}
+                                    {% elif trek.status == 'Ongoing' %}
                                         <span class="badge bg-success">Ongoing</span>
+                                    {% elif trek.status == 'Completed' %}
+                                        <span class="badge bg-dark">Completed</span>
+                                    {% elif trek.status == 'Pending Approval' %}
+                                        <span class="badge bg-warning text-dark">Pending</span>
+                                    {% else %}
+                                         <span class="badge bg-danger">Closed</span>
                                     {% endif %}                                    
                                 </td>
                             </tr>

@@ -42,7 +42,7 @@
                     <td class="fw-bold">{{ trek.available_slots }}</td>
                     
                     <th class="text-muted">Registered Participants:</th>
-                    <td class="fw-bold text-success">{{ trek.participants | length }}</td>
+                    <td class="fw-bold text-success">{{ trek.bookings|length }}</td>
                 </tr>
                 <tr>
                     <th class="text-muted">Assigned Staff:</th>
@@ -54,25 +54,24 @@
                         {% endif %}
                     </td>
                     
-                    <th class="text-muted">Trek State:</th>
-                    <td>
-                        {% if trek.end_date < today %} 
-                            <span class="badge bg-dark">Completed</span>
-                        {% elif trek.start_date > today %} 
-                            <span class="badge bg-secondary">Upcoming</span>
-                        {% else %} 
-                            <span class="badge bg-success">Ongoing</span>
-                        {% endif %}
-                    </td>
+                    <th class="text-muted">Price:</th>
+                    <td class="fw-bold">₹{{ trek.price }}</td>
                 </tr>
                 <tr>
                     <th class="text-muted">Booking Status:</th>
-                    <td colspan="3">
-                        {% if trek.start_date <= today or trek.available_slots <= 0 or trek.status == 'Closed' %}
-                            <span class="text-danger fw-bold">Closed</span>
-                        {% else %}
+                    <td colspan="1"> 
+                        {% if trek.status == 'Upcoming' and trek.available_slots > 0 %}
                             <span class="text-success fw-bold">Open</span>
+                        {% elif trek.status == 'Upcoming' and trek.available_slots == 0 %}
+                            <span class="text-danger fw-bold">Sold Out</span>
+                        {% else %}
+                            <span class="text-danger fw-bold">Closed</span>
                         {% endif %}
+                    </td>
+
+                    <th class="text-muted">Trek State:</th>
+                    <td>
+                        <span class="badge bg-success">{{ trek.status }}</span>
                     </td>
                 </tr>
             </tbody>
@@ -94,7 +93,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for booking in trek.bookings %}
+                    {% for booking in trek.bookings if booking.booking_status == 'Confirmed' %}
                     <tr>
                         <td class="fw-bold">#{{ booking.id }}</td>
                         <td class="fw-bold text-success">{{ booking.user.username }}</td>
@@ -107,7 +106,6 @@
         {% else %}
             <div class="alert alert-light text-center m-3 p-4 border text-muted">
                 <h5 class="fw-bold mb-1">No Participants Registered Yet</h5>
-                <p class="mb-0">Jab koi trekker is trek ko book karega, tab unki details yahan dikhengi.</p>
             </div>
         {% endif %}
     </div>

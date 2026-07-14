@@ -9,13 +9,11 @@
             </div>
             <div class="card-body">
                 
-                <!-- Action me trek.id pass karna zaroori hai -->
                 <form action="{{ url_for('edit_trek', trek_id=trek.id) }}" method="POST">
                     
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label class="form-label text-success fw-bold">Trek Name</label>
-                            <!-- value attribute purana data dikhayega -->
                             <input type="text" class="form-control" name="name" value="{{ trek.name }}" required>
                         </div>
                         <div class="col-md-6 mb-3">

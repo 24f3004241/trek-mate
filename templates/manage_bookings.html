@@ -30,7 +30,13 @@
                     {% for b in bookings %}
                     <tr>
                         <td class="fw-bold">#{{ b.id }}</td>
-                        <td class="text-success fw-bold">{{ b.trek.name }}</td>
+                        <td>
+                            <span class="fw-bold">{{ b.trek.name }}</span>
+                            
+                            {% if b.trek.status == 'Deleted' %}
+                                <br><span class="badge bg-danger mt-1" style="font-size: 0.65rem;">Deleted Trek</span>
+                            {% endif %}
+                        </td>
                         <td>{{ b.user.username }}</td>
                         <td>{{ b.booking_date.strftime('%d-%m-%Y') }}</td>
                         <td>{{ b.seats_booked }}</td>

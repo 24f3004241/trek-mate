@@ -32,7 +32,7 @@
                         <th>Username</th>
                         <th>Name</th>
                         <th>Email</th>
-                        <th>Experience</th>
+                        <th>Phone No.</th>
                         <th>Status</th>
                         <th>Profile</th>
                         <th>Actions</th>
@@ -45,7 +45,7 @@
                         <td class="text-success fw-bold">{{ staff.user.username }}</td>
                         <td>{% if staff.user.full_name %}{{ staff.user.full_name }}{% else %}N/A{% endif %}</td>
                         <td>{{ staff.user.email }}</td>
-                        <td>{% if staff.user.experience %}{{ staff.user.experience }} Yrs{% else %}Not Available{% endif %}</td>
+                        <td>{% if staff.user.phone_number %}{{ staff.user.phone_number }}{% else %}Not Provided{% endif %}</td>
 
                         <!-- Status Column -->
                         <td class="fw-bold">
@@ -67,19 +67,15 @@
                         <td>
                             <div class="d-flex justify-content-center gap-1">
                                 
-                                <!-- Approve Button: Sirf tab dikhega jab status Approved na ho -->
+                                <!-- Approve Button -->
                                 {% if staff.status != 'Approved' %}
                                     <a href="{{ url_for('approve_action', staff_id=staff.id) }}" class="btn btn-success btn-sm fw-bold">Approve</a>
                                 {% endif %}
                                 
-                                <!-- Blacklist Button: Sirf tab dikhega jab status Blacklisted na ho -->
+                                <!-- Blacklist Button -->
                                 {% if staff.status != 'Blacklisted' %}
                                     <a href="{{ url_for('blacklist_action', staff_id=staff.id) }}" class="btn btn-danger btn-sm fw-bold" onclick="return confirm('Do you really want blacklist this staff ?');">Blacklist</a>
                                 {% endif %}
-                                
-                                <!-- Remove Button: Hamesha dikhega -->
-                                <a href="{{ url_for('remove_staff_action', staff_id=staff.id) }}" class="btn btn-dark btn-sm fw-bold" onclick="return confirm('Are you sure you want to delete this account ?');">Remove</a>
-                                
                             </div>
                         </td>
                     </tr>

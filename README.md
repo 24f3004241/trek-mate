@@ -27,4 +27,4 @@ If you want to run this project on your system, follow these simple steps:
 ## Default Admin Details
 To check the admin dashboard, you can use these login details:
 * **Username:** admin
-* **Password:** admin123
+* **Password:** admin123 
